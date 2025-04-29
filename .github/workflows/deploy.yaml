@@ -1,0 +1,74 @@
+name: Deploy to Kubernetes
+description: |
+  This workflow deploys the application to a Kubernetes cluster using Helm.
+  It runs on pushes to the master and develop branches, and on pull requests to the master branch.
+  It sets up the environment, analyzes code, publishes the Docker image, deploys to Kubernetes, and notifies the status.
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+
+jobs:
+  set_environment:
+    name: Set
+    uses: cabrera-evil/workflows/.github/workflows/set-environment.yaml@master
+    with:
+      ref: ${{ github.ref }}
+    secrets: inherit
+
+  analyze_code:
+    name: Analyze
+    needs: [set_environment]
+    uses: cabrera-evil/workflows/.github/workflows/code-analysis.yaml@master
+    with:
+      default_branch: ${{ github.event.repository.default_branch }}
+      push_before_sha: ${{ github.event.before }}
+      push_base_sha: ${{ github.event.base_ref }}
+    secrets: inherit
+
+  analyze_deps:
+    name: Analyze
+    needs: [set_environment]
+    uses: cabrera-evil/workflows/.github/workflows/deps-analysis.yaml@master
+    with:
+      report: true
+    secrets: inherit
+
+  publish:
+    name: Publish
+    needs: [set_environment, analyze_code, analyze_deps]
+    uses: cabrera-evil/workflows/.github/workflows/publish-docker.yaml@master
+    with:
+      docker_image: ${{ github.event.repository.name }}
+    secrets: inherit
+
+  deploy:
+    name: Deploy
+    needs: [set_environment, publish]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+    uses: cabrera-evil/workflows/.github/workflows/deploy-helm.yaml@master
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+      short_sha: ${{ needs.set_environment.outputs.short_sha }}
+      namespace: ${{ needs.set_environment.outputs.namespace }}
+      release_name: ${{ needs.set_environment.outputs.release_name }}
+      chart: cabrera-evil/deploy-chart
+    secrets: inherit
+
+  notify:
+    name: Notify
+    needs: [set_environment, deploy]
+    if: always()
+    uses: cabrera-evil/workflows/.github/workflows/notify-status-discord.yaml@master
+    with:
+      environment: ${{ needs.set_environment.outputs.environment }}
+      short_sha: ${{ needs.set_environment.outputs.short_sha }}
+      status: ${{ needs.deploy.outputs.status || 'error' }}
+    secrets: inherit
