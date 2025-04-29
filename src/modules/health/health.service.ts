@@ -1,16 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { HealthCheckService, HttpHealthIndicator } from '@nestjs/terminus';
+import {
+  DiskHealthIndicator,
+  HealthCheckService,
+  MemoryHealthIndicator,
+} from '@nestjs/terminus';
 
 @Injectable()
 export class HealthService {
   constructor(
     private health: HealthCheckService,
-    private http: HttpHealthIndicator,
+    // private db: TypeOrmHealthIndicator,
+    private readonly disk: DiskHealthIndicator,
+    private memory: MemoryHealthIndicator,
   ) {}
 
-  async check() {
+  check() {
     return this.health.check([
-      () => this.http.pingCheck('nestjs-docs', 'https://docs.nestjs.com'),
+      // () => this.db.pingCheck('database', { timeout: 15000 }),
+      () =>
+        this.disk.checkStorage('storage', {
+          path: '/',
+          threshold: 250 * 1024 * 1024 * 1024,
+        }),
+      () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024),
     ]);
   }
 }
