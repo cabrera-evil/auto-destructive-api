@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auto-destructive-api
+  labels:
+    helm.sh/chart: deploy-chart-0.1.0
+    app.kubernetes.io/name: deploy-chart
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: '0.0.1'
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: deploy-chart
+      app.kubernetes.io/instance: release-name
+  template:
+    metadata:
+      labels:
+        helm.sh/chart: deploy-chart-0.1.0
+        app.kubernetes.io/name: deploy-chart
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: '0.0.1'
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      serviceAccountName: default
+      securityContext:
+        fsGroup: 2000
+      containers:
+        - name: deploy-chart
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsGroup: 3000
+            runAsNonRoot: true
+            runAsUser: 1000
+          image: 'cabreraevil/auto-destructive-api:latest'
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: auto-destructive-api-secret
+          livenessProbe:
+            httpGet:
+              path: /api
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          resources: {}
