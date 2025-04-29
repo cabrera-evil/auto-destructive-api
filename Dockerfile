@@ -29,8 +29,8 @@ FROM node:iron-bookworm-slim
 RUN npm install -g pnpm@latest
 
 # Copy the entrypoint script to the container
-COPY docker-entrypoint.sh /usr/local/bin/
-ENTRYPOINT ["docker-entrypoint.sh"]
+# COPY docker-entrypoint.sh /usr/local/bin/
+# ENTRYPOINT ["docker-entrypoint.sh"]
 
 # Set the user to node
 USER node

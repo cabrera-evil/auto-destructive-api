@@ -66,3 +66,6 @@ commitlint.config.*
 
 # Actions
 .github/
+
+# Kubernetes
+**/k8s/**
