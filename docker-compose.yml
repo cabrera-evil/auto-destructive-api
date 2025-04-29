@@ -1,10 +1,10 @@
 services:
   backend:
-    image: cabreraevil/nestjs-api:latest
+    image: cabreraevil/auto-destructive-api:latest
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nestjs-api
+    container_name: auto-destructive-api
     restart: no
     ports:
       - ${PORT-80}:80
