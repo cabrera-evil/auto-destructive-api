@@ -7,4 +7,3 @@ resources:
   - deployment.yaml
   - secret.yaml
   - svc.yaml
-  - test-pod.yaml
